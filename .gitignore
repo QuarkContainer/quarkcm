@@ -1,0 +1,7 @@
+quarkcm
+quarkcmclient/target/
+__debug_bin
+build/bin/
+.vscode/dryrun.log
+.vscode/configurationCache.log
+.vscode/targets.log
