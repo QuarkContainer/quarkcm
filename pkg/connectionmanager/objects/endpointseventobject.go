@@ -14,19 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package objects
 
-const (
-	ResourceType_Pod       string = "pod"
-	ResourceType_Service   string = "service"
-	ResourceType_Endpoints string = "endpoints"
-	ResourceType_Node      string = "node"
-
-	EventType_Set    string = "set"
-	EventType_Delete string = "delete"
-
-	Pod_Cidr_File_Name_In_Container      string = "/home/PodCidr"
-	Pod_Cidr_File_Name_In_Host           string = "/var/quarkcm/PodCidr"
-	Allocated_Ips_File_Name_In_Container string = "/home/Allocated"
-	Allocated_Ips_File_Name_In_Host      string = "/var/quarkcm/Allocated"
-)
+type EndpointsEventObject struct {
+	ResourceVersion int
+	EventType       string
+	EndpointsObject EndpointsObject
+}

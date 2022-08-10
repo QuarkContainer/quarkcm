@@ -50,6 +50,42 @@ func NewPodController(client kubernetes.Interface) *Controller {
 	return newResourceController(client, eventHandler, informer, constants.ResourceType_Pod)
 }
 
+func NewServiceController(client kubernetes.Interface) *Controller {
+	var eventHandler handlers.Handler = new(handlers.ServiceHandler)
+	informer := cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().Services("").List(options)
+			},
+			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+				return client.CoreV1().Services("").Watch(options)
+			},
+		},
+		&api_v1.Service{},
+		0,
+		cache.Indexers{},
+	)
+	return newResourceController(client, eventHandler, informer, constants.ResourceType_Service)
+}
+
+func NewEndpointsController(client kubernetes.Interface) *Controller {
+	var eventHandler handlers.Handler = new(handlers.EndpointsHandler)
+	informer := cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().Endpoints("").List(options)
+			},
+			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+				return client.CoreV1().Endpoints("").Watch(options)
+			},
+		},
+		&api_v1.Endpoints{},
+		0,
+		cache.Indexers{},
+	)
+	return newResourceController(client, eventHandler, informer, constants.ResourceType_Endpoints)
+}
+
 func NewNodeController(client kubernetes.Interface) *Controller {
 	var eventHandler handlers.Handler = new(handlers.NodeHandler)
 	informer := cache.NewSharedIndexInformer(

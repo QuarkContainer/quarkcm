@@ -69,6 +69,18 @@ func Start() {
 
 	go podController.Run(podStopCh)
 
+	serviceController := NewServiceController(kubeClient)
+	serviceStopCh := make(chan struct{})
+	defer close(serviceStopCh)
+
+	go serviceController.Run(serviceStopCh)
+
+	endpointsController := NewEndpointsController(kubeClient)
+	endpointsStopCh := make(chan struct{})
+	defer close(endpointsStopCh)
+
+	go endpointsController.Run(endpointsStopCh)
+
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
 	signal.Notify(sigterm, syscall.SIGINT)
