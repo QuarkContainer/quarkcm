@@ -3,6 +3,7 @@ module github.com/CentaurusInfra/quarkcm
 go 1.14
 
 require (
+	github.com/ahmetalpbalkan/go-linq v3.0.0+incompatible // indirect
 	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.9.1
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
