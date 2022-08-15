@@ -29,6 +29,10 @@ type QuarkCMServiceClient interface {
 	WatchNode(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchNodeClient, error)
 	ListPod(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PodListMessage, error)
 	WatchPod(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchPodClient, error)
+	ListService(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ServiceListMessage, error)
+	WatchService(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchServiceClient, error)
+	ListEndpoints(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*EndpointsListMessage, error)
+	WatchEndpoints(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchEndpointsClient, error)
 }
 
 type quarkCMServiceClient struct {
@@ -130,6 +134,88 @@ func (x *quarkCMServiceWatchPodClient) Recv() (*PodMessage, error) {
 	return m, nil
 }
 
+func (c *quarkCMServiceClient) ListService(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ServiceListMessage, error) {
+	out := new(ServiceListMessage)
+	err := c.cc.Invoke(ctx, "/quarkcmsvc.QuarkCMService/ListService", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *quarkCMServiceClient) WatchService(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchServiceClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QuarkCMService_ServiceDesc.Streams[2], "/quarkcmsvc.QuarkCMService/WatchService", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &quarkCMServiceWatchServiceClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QuarkCMService_WatchServiceClient interface {
+	Recv() (*ServiceMessage, error)
+	grpc.ClientStream
+}
+
+type quarkCMServiceWatchServiceClient struct {
+	grpc.ClientStream
+}
+
+func (x *quarkCMServiceWatchServiceClient) Recv() (*ServiceMessage, error) {
+	m := new(ServiceMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *quarkCMServiceClient) ListEndpoints(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*EndpointsListMessage, error) {
+	out := new(EndpointsListMessage)
+	err := c.cc.Invoke(ctx, "/quarkcmsvc.QuarkCMService/ListEndpoints", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *quarkCMServiceClient) WatchEndpoints(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchEndpointsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QuarkCMService_ServiceDesc.Streams[3], "/quarkcmsvc.QuarkCMService/WatchEndpoints", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &quarkCMServiceWatchEndpointsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QuarkCMService_WatchEndpointsClient interface {
+	Recv() (*EndpointsMessage, error)
+	grpc.ClientStream
+}
+
+type quarkCMServiceWatchEndpointsClient struct {
+	grpc.ClientStream
+}
+
+func (x *quarkCMServiceWatchEndpointsClient) Recv() (*EndpointsMessage, error) {
+	m := new(EndpointsMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // QuarkCMServiceServer is the server API for QuarkCMService service.
 // All implementations must embed UnimplementedQuarkCMServiceServer
 // for forward compatibility
@@ -140,6 +226,10 @@ type QuarkCMServiceServer interface {
 	WatchNode(*MaxResourceVersionMessage, QuarkCMService_WatchNodeServer) error
 	ListPod(context.Context, *emptypb.Empty) (*PodListMessage, error)
 	WatchPod(*MaxResourceVersionMessage, QuarkCMService_WatchPodServer) error
+	ListService(context.Context, *emptypb.Empty) (*ServiceListMessage, error)
+	WatchService(*MaxResourceVersionMessage, QuarkCMService_WatchServiceServer) error
+	ListEndpoints(context.Context, *emptypb.Empty) (*EndpointsListMessage, error)
+	WatchEndpoints(*MaxResourceVersionMessage, QuarkCMService_WatchEndpointsServer) error
 	mustEmbedUnimplementedQuarkCMServiceServer()
 }
 
@@ -161,6 +251,18 @@ func (UnimplementedQuarkCMServiceServer) ListPod(context.Context, *emptypb.Empty
 }
 func (UnimplementedQuarkCMServiceServer) WatchPod(*MaxResourceVersionMessage, QuarkCMService_WatchPodServer) error {
 	return status.Errorf(codes.Unimplemented, "method WatchPod not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) ListService(context.Context, *emptypb.Empty) (*ServiceListMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListService not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) WatchService(*MaxResourceVersionMessage, QuarkCMService_WatchServiceServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchService not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) ListEndpoints(context.Context, *emptypb.Empty) (*EndpointsListMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListEndpoints not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) WatchEndpoints(*MaxResourceVersionMessage, QuarkCMService_WatchEndpointsServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchEndpoints not implemented")
 }
 func (UnimplementedQuarkCMServiceServer) mustEmbedUnimplementedQuarkCMServiceServer() {}
 
@@ -271,6 +373,84 @@ func (x *quarkCMServiceWatchPodServer) Send(m *PodMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _QuarkCMService_ListService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuarkCMServiceServer).ListService(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quarkcmsvc.QuarkCMService/ListService",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuarkCMServiceServer).ListService(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuarkCMService_WatchService_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MaxResourceVersionMessage)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QuarkCMServiceServer).WatchService(m, &quarkCMServiceWatchServiceServer{stream})
+}
+
+type QuarkCMService_WatchServiceServer interface {
+	Send(*ServiceMessage) error
+	grpc.ServerStream
+}
+
+type quarkCMServiceWatchServiceServer struct {
+	grpc.ServerStream
+}
+
+func (x *quarkCMServiceWatchServiceServer) Send(m *ServiceMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _QuarkCMService_ListEndpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuarkCMServiceServer).ListEndpoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quarkcmsvc.QuarkCMService/ListEndpoints",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuarkCMServiceServer).ListEndpoints(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuarkCMService_WatchEndpoints_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MaxResourceVersionMessage)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QuarkCMServiceServer).WatchEndpoints(m, &quarkCMServiceWatchEndpointsServer{stream})
+}
+
+type QuarkCMService_WatchEndpointsServer interface {
+	Send(*EndpointsMessage) error
+	grpc.ServerStream
+}
+
+type quarkCMServiceWatchEndpointsServer struct {
+	grpc.ServerStream
+}
+
+func (x *quarkCMServiceWatchEndpointsServer) Send(m *EndpointsMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // QuarkCMService_ServiceDesc is the grpc.ServiceDesc for QuarkCMService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -290,6 +470,14 @@ var QuarkCMService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListPod",
 			Handler:    _QuarkCMService_ListPod_Handler,
 		},
+		{
+			MethodName: "ListService",
+			Handler:    _QuarkCMService_ListService_Handler,
+		},
+		{
+			MethodName: "ListEndpoints",
+			Handler:    _QuarkCMService_ListEndpoints_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -300,6 +488,16 @@ var QuarkCMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "WatchPod",
 			Handler:       _QuarkCMService_WatchPod_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchService",
+			Handler:       _QuarkCMService_WatchService_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchEndpoints",
+			Handler:       _QuarkCMService_WatchEndpoints_Handler,
 			ServerStreams: true,
 		},
 	},
