@@ -18,7 +18,6 @@ package grpc
 
 import (
 	context "context"
-	"encoding/binary"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -33,6 +32,7 @@ import (
 
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/datastore"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/utils"
 )
 
 var (
@@ -74,7 +74,7 @@ func (s *server) ListNode(ctx context.Context, in *emptypb.Empty) (*NodeListMess
 		nodeMessages = append(nodeMessages, &NodeMessage{
 			Name:              nodeEventObject.NodeObject.Name,
 			Hostname:          nodeEventObject.NodeObject.Hostname,
-			Ip:                convertIP(nodeEventObject.NodeObject.IP),
+			Ip:                utils.ConvertIP(nodeEventObject.NodeObject.IP),
 			CreationTimestamp: nodeEventObject.NodeObject.CreationTimestamp,
 			Subnet:            nodeEventObject.NodeObject.Subnet,
 			NetMask:           nodeEventObject.NodeObject.NetMask,
@@ -139,7 +139,7 @@ func sendNodeStream(stream QuarkCMService_WatchNodeServer, nodeEventObject *obje
 	nodeMessage := &NodeMessage{
 		Name:              nodeEventObject.NodeObject.Name,
 		Hostname:          nodeEventObject.NodeObject.Hostname,
-		Ip:                convertIP(nodeEventObject.NodeObject.IP),
+		Ip:                utils.ConvertIP(nodeEventObject.NodeObject.IP),
 		CreationTimestamp: nodeEventObject.NodeObject.CreationTimestamp,
 		ResourceVersion:   int32(nodeEventObject.ResourceVersion),
 		EventType:         nodeEventObject.EventType,
@@ -160,7 +160,7 @@ func (s *server) ListPod(ctx context.Context, in *emptypb.Empty) (*PodListMessag
 		podEventObject := podEventObjects[i]
 		podMessages = append(podMessages, &PodMessage{
 			Key:             podEventObject.PodObject.Key,
-			Ip:              convertIP(podEventObject.PodObject.IP),
+			Ip:              utils.ConvertIP(podEventObject.PodObject.IP),
 			NodeName:        podEventObject.PodObject.NodeName,
 			ContainerId:     podEventObject.PodObject.ContainerID,
 			ResourceVersion: int32(podEventObject.ResourceVersion),
@@ -223,7 +223,7 @@ func dequeuePod(queue workqueue.RateLimitingInterface) (*objects.PodEventObject,
 func sendPodStream(stream QuarkCMService_WatchPodServer, podEventObject *objects.PodEventObject) error {
 	podMessage := &PodMessage{
 		Key:             podEventObject.PodObject.Key,
-		Ip:              convertIP(podEventObject.PodObject.IP),
+		Ip:              utils.ConvertIP(podEventObject.PodObject.IP),
 		NodeName:        podEventObject.PodObject.NodeName,
 		ContainerId:     podEventObject.PodObject.ContainerID,
 		ResourceVersion: int32(podEventObject.ResourceVersion),
@@ -235,6 +235,166 @@ func sendPodStream(stream QuarkCMService_WatchPodServer, podEventObject *objects
 	return nil
 }
 
-func convertIP(ip string) uint32 {
-	return binary.LittleEndian.Uint32(net.ParseIP(ip).To4())
+func (s *server) ListService(ctx context.Context, in *emptypb.Empty) (*ServiceListMessage, error) {
+	klog.Info("grpc Service called ListService")
+
+	serviceEventObjects := datastore.ListService(0)
+	length := len(serviceEventObjects)
+	serviceMessages := make([]*ServiceMessage, 0, length)
+	for i := 0; i < length; i++ {
+		serviceEventObject := serviceEventObjects[i]
+		serviceMessages = append(serviceMessages, &ServiceMessage{
+			Name:            serviceEventObject.ServiceObject.Name,
+			ClusterIp:       utils.ConvertIP(serviceEventObject.ServiceObject.ClusterIP),
+			Ports:           serviceEventObject.ServiceObject.Ports,
+			ResourceVersion: int32(serviceEventObject.ResourceVersion),
+			EventType:       serviceEventObject.EventType,
+		})
+	}
+
+	return &ServiceListMessage{Services: serviceMessages}, nil
+}
+
+func (s *server) WatchService(maxResourceVersionMessage *MaxResourceVersionMessage, stream QuarkCMService_WatchServiceServer) error {
+	klog.Info("grpc Service called WatchService")
+
+	key := uuid.New()
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer queue.ShutDown()
+	datastore.AddServiceQueue(key, queue)
+	defer datastore.RemoveServiceQueue(key)
+
+	serviceEventObjects := datastore.ListService(int(maxResourceVersionMessage.MaxResourceVersion))
+	for _, serviceEventObject := range serviceEventObjects {
+		if err := sendServiceStream(stream, &serviceEventObject); err != nil {
+			return err
+		}
+	}
+
+	for {
+		exit, err := processNextService(queue, stream)
+		if exit {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processNextService(queue workqueue.RateLimitingInterface, stream QuarkCMService_WatchServiceServer) (bool, error) {
+	serviceEventObject, exit := dequeueService(queue)
+	if exit {
+		return exit, nil
+	}
+	return exit, sendServiceStream(stream, serviceEventObject)
+}
+
+func dequeueService(queue workqueue.RateLimitingInterface) (*objects.ServiceEventObject, bool) {
+	queueItem, exit := queue.Get()
+	if exit {
+		return nil, exit
+	}
+	serviceEventObject := queueItem.(objects.ServiceEventObject)
+	queue.Forget(queueItem)
+	// defer queue.Done(queueItem)
+	queue.Done(queueItem)
+	return &serviceEventObject, exit
+}
+
+func sendServiceStream(stream QuarkCMService_WatchServiceServer, serviceEventObject *objects.ServiceEventObject) error {
+	serviceMessage := &ServiceMessage{
+		Name:            serviceEventObject.ServiceObject.Name,
+		ClusterIp:       utils.ConvertIP(serviceEventObject.ServiceObject.ClusterIP),
+		Ports:           serviceEventObject.ServiceObject.Ports,
+		ResourceVersion: int32(serviceEventObject.ResourceVersion),
+		EventType:       serviceEventObject.EventType,
+	}
+	if err := stream.Send(serviceMessage); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *server) ListEndpoints(ctx context.Context, in *emptypb.Empty) (*EndpointsListMessage, error) {
+	klog.Info("grpc Endpoints called ListEndpoints")
+
+	endpointsEventObjects := datastore.ListEndpoints(0)
+	length := len(endpointsEventObjects)
+	endpointsMessages := make([]*EndpointsMessage, 0, length)
+	for i := 0; i < length; i++ {
+		endpointsEventObject := endpointsEventObjects[i]
+		endpointsMessages = append(endpointsMessages, &EndpointsMessage{
+			Name:            endpointsEventObject.EndpointsObject.Name,
+			IpWithPorts:     endpointsEventObject.EndpointsObject.IPWithPorts,
+			ResourceVersion: int32(endpointsEventObject.ResourceVersion),
+			EventType:       endpointsEventObject.EventType,
+		})
+	}
+
+	return &EndpointsListMessage{Endpointses: endpointsMessages}, nil
+}
+
+func (s *server) WatchEndpoints(maxResourceVersionMessage *MaxResourceVersionMessage, stream QuarkCMService_WatchEndpointsServer) error {
+	klog.Info("grpc Endpoints called WatchEndpoints")
+
+	key := uuid.New()
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer queue.ShutDown()
+	datastore.AddEndpointsQueue(key, queue)
+	defer datastore.RemoveEndpointsQueue(key)
+
+	endpointsEventObjects := datastore.ListEndpoints(int(maxResourceVersionMessage.MaxResourceVersion))
+	for _, endpointsEventObject := range endpointsEventObjects {
+		if err := sendEndpointsStream(stream, &endpointsEventObject); err != nil {
+			return err
+		}
+	}
+
+	for {
+		exit, err := processNextEndpoints(queue, stream)
+		if exit {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processNextEndpoints(queue workqueue.RateLimitingInterface, stream QuarkCMService_WatchEndpointsServer) (bool, error) {
+	endpointsEventObject, exit := dequeueEndpoints(queue)
+	if exit {
+		return exit, nil
+	}
+	return exit, sendEndpointsStream(stream, endpointsEventObject)
+}
+
+func dequeueEndpoints(queue workqueue.RateLimitingInterface) (*objects.EndpointsEventObject, bool) {
+	queueItem, exit := queue.Get()
+	if exit {
+		return nil, exit
+	}
+	endpointsEventObject := queueItem.(objects.EndpointsEventObject)
+	queue.Forget(queueItem)
+	// defer queue.Done(queueItem)
+	queue.Done(queueItem)
+	return &endpointsEventObject, exit
+}
+
+func sendEndpointsStream(stream QuarkCMService_WatchEndpointsServer, endpointsEventObject *objects.EndpointsEventObject) error {
+	endpointsMessage := &EndpointsMessage{
+		Name:            endpointsEventObject.EndpointsObject.Name,
+		IpWithPorts:     endpointsEventObject.EndpointsObject.IPWithPorts,
+		ResourceVersion: int32(endpointsEventObject.ResourceVersion),
+		EventType:       endpointsEventObject.EventType,
+	}
+	if err := stream.Send(endpointsMessage); err != nil {
+		return err
+	}
+	return nil
 }

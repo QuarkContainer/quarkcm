@@ -22,6 +22,7 @@ import (
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/constants"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/datastore"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 
@@ -54,7 +55,7 @@ func getIPWithPortsString(subsets []v1.EndpointSubset) []string {
 	From(subsets).ForEach(func(subset interface{}) {
 		From(subset.(v1.EndpointSubset).Addresses).ForEach(func(address interface{}) {
 			From(subset.(v1.EndpointSubset).Ports).ForEach(func(port interface{}) {
-				result = append(result, fmt.Sprintf("%s:%s:%v", address.(v1.EndpointAddress).IP, port.(v1.EndpointPort).Protocol, port.(v1.EndpointPort).Port))
+				result = append(result, fmt.Sprintf("%v:%s:%v", utils.ConvertIP(address.(v1.EndpointAddress).IP), port.(v1.EndpointPort).Protocol, port.(v1.EndpointPort).Port))
 			})
 		})
 	})

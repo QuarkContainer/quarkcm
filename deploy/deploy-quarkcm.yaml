@@ -5,7 +5,7 @@ metadata:
   name: quarkcm-operator
 rules:
 - apiGroups: [""]
-  resources: ["pods", "nodes"]
+  resources: ["pods", "nodes", "services", "endpoints"]
   verbs: ["get", "watch", "list"]
 ---
 apiVersion: v1
@@ -110,4 +110,4 @@ spec:
             privileged: true
           volumeMounts:
             - name: quarkrdma
-              mountPath: /home
+              mountPath: /var/quarkrdma
