@@ -104,6 +104,24 @@ func NewNodeController(client kubernetes.Interface) *Controller {
 	return newResourceController(client, eventHandler, informer, constants.ResourceType_Node)
 }
 
+func NewSystemConfigMapController(client kubernetes.Interface) *Controller {
+	var eventHandler handlers.Handler = new(handlers.ConfigMapHandler)
+	informer := cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+				return client.CoreV1().ConfigMaps("kube-system").List(options)
+			},
+			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+				return client.CoreV1().ConfigMaps("kube-system").Watch(options)
+			},
+		},
+		&api_v1.ConfigMap{},
+		0,
+		cache.Indexers{},
+	)
+	return newResourceController(client, eventHandler, informer, constants.ResourceType_SystemConfigMap)
+}
+
 func newResourceController(client kubernetes.Interface, eventHandler handlers.Handler, informer cache.SharedIndexInformer, resourceType string) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 	var eventItem objects.EventItem

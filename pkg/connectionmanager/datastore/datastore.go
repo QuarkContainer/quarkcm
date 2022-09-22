@@ -45,6 +45,11 @@ type DataStore struct {
 	EndpointsMap             map[string]*objects.EndpointsObject           // map[key] => endpoints object
 	EndpointsEventMap        map[int]*objects.EndpointsEventObject         // map[resource version] => endpoints event object
 	EndpointsQueueMap        map[uuid.UUID]workqueue.RateLimitingInterface // map[guid] => endpoints queue
+
+	ConfigMapResourceVersion int
+	ConfigMapMap             map[string]*objects.ConfigMapObject           // map[key] => configmap object
+	ConfigMapEventMap        map[int]*objects.ConfigMapEventObject         // map[resource version] => configmap event object
+	ConfigMapQueueMap        map[uuid.UUID]workqueue.RateLimitingInterface // map[guid] => configmap queue
 }
 
 var lock = &sync.Mutex{}
@@ -76,6 +81,11 @@ func Instance() *DataStore {
 				EndpointsMap:             map[string]*objects.EndpointsObject{},
 				EndpointsEventMap:        map[int]*objects.EndpointsEventObject{},
 				EndpointsQueueMap:        map[uuid.UUID]workqueue.RateLimitingInterface{},
+
+				ConfigMapResourceVersion: 0,
+				ConfigMapMap:             map[string]*objects.ConfigMapObject{},
+				ConfigMapEventMap:        map[int]*objects.ConfigMapEventObject{},
+				ConfigMapQueueMap:        map[uuid.UUID]workqueue.RateLimitingInterface{},
 			}
 		}
 	}

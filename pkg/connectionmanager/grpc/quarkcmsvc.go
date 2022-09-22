@@ -398,3 +398,84 @@ func sendEndpointsStream(stream QuarkCMService_WatchEndpointsServer, endpointsEv
 	}
 	return nil
 }
+
+func (s *server) ListConfigMap(ctx context.Context, in *emptypb.Empty) (*ConfigMapListMessage, error) {
+	klog.Info("grpc ConfigMap called ListConfigMap")
+
+	configMapEventObjects := datastore.ListConfigMap(0)
+	length := len(configMapEventObjects)
+	configMapMessages := make([]*ConfigMapMessage, 0, length)
+	for i := 0; i < length; i++ {
+		configMapEventObject := configMapEventObjects[i]
+		configMapMessages = append(configMapMessages, &ConfigMapMessage{
+			Name:            configMapEventObject.ConfigMapObject.Name,
+			Value:           configMapEventObject.ConfigMapObject.Value,
+			ResourceVersion: int32(configMapEventObject.ResourceVersion),
+			EventType:       configMapEventObject.EventType,
+		})
+	}
+
+	return &ConfigMapListMessage{ConfigMaps: configMapMessages}, nil
+}
+
+func (s *server) WatchConfigMap(maxResourceVersionMessage *MaxResourceVersionMessage, stream QuarkCMService_WatchConfigMapServer) error {
+	klog.Info("grpc ConfigMap called WatchConfigMap")
+
+	key := uuid.New()
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer queue.ShutDown()
+	datastore.AddConfigMapQueue(key, queue)
+	defer datastore.RemoveConfigMapQueue(key)
+
+	configMapEventObjects := datastore.ListConfigMap(int(maxResourceVersionMessage.MaxResourceVersion))
+	for _, configMapEventObject := range configMapEventObjects {
+		if err := sendConfigMapStream(stream, &configMapEventObject); err != nil {
+			return err
+		}
+	}
+
+	for {
+		exit, err := processNextConfigMap(queue, stream)
+		if exit {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processNextConfigMap(queue workqueue.RateLimitingInterface, stream QuarkCMService_WatchConfigMapServer) (bool, error) {
+	configMapEventObject, exit := dequeueConfigMap(queue)
+	if exit {
+		return exit, nil
+	}
+	return exit, sendConfigMapStream(stream, configMapEventObject)
+}
+
+func dequeueConfigMap(queue workqueue.RateLimitingInterface) (*objects.ConfigMapEventObject, bool) {
+	queueItem, exit := queue.Get()
+	if exit {
+		return nil, exit
+	}
+	configMapEventObject := queueItem.(objects.ConfigMapEventObject)
+	queue.Forget(queueItem)
+	// defer queue.Done(queueItem)
+	queue.Done(queueItem)
+	return &configMapEventObject, exit
+}
+
+func sendConfigMapStream(stream QuarkCMService_WatchConfigMapServer, configMapEventObject *objects.ConfigMapEventObject) error {
+	configMapMessage := &ConfigMapMessage{
+		Name:            configMapEventObject.ConfigMapObject.Name,
+		Value:           configMapEventObject.ConfigMapObject.Value,
+		ResourceVersion: int32(configMapEventObject.ResourceVersion),
+		EventType:       configMapEventObject.EventType,
+	}
+	if err := stream.Send(configMapMessage); err != nil {
+		return err
+	}
+	return nil
+}
