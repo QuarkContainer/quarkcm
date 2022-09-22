@@ -35,5 +35,5 @@ nsenter -t 1 -m -u -n -i apt-get update -y && nsenter -t 1 -m -u -n -i apt-get i
 nsenter -t 1 -m -u -n -i mkdir -p /opt/cni/bin && \
 nsenter -t 1 -m -u -n -i mkdir -p /etc/cni/net.d && \
 nsenter -t 1 -m -u -n -i cp -f /var/quarkcni/build/bin/quarkcni /opt/cni/bin/quarkcni && \
-nsenter -t 1 -m -u -n -i cp -f /var/quarkcni/deploy/10-quarkcni.conf /etc/cni/net.d/10-quarkcni.conf && \
+nsenter -t 1 -m -u -n -i cp -f /var/quarkcni/deploy/10-quarkcni.conf /etc/cni/net.d/10-0quarkcni.conf && \
 echo "Quark Connection Manager init complete"

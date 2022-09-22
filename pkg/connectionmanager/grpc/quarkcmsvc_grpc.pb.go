@@ -33,6 +33,8 @@ type QuarkCMServiceClient interface {
 	WatchService(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchServiceClient, error)
 	ListEndpoints(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*EndpointsListMessage, error)
 	WatchEndpoints(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchEndpointsClient, error)
+	ListConfigMap(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConfigMapListMessage, error)
+	WatchConfigMap(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchConfigMapClient, error)
 }
 
 type quarkCMServiceClient struct {
@@ -216,6 +218,47 @@ func (x *quarkCMServiceWatchEndpointsClient) Recv() (*EndpointsMessage, error) {
 	return m, nil
 }
 
+func (c *quarkCMServiceClient) ListConfigMap(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConfigMapListMessage, error) {
+	out := new(ConfigMapListMessage)
+	err := c.cc.Invoke(ctx, "/quarkcmsvc.QuarkCMService/ListConfigMap", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *quarkCMServiceClient) WatchConfigMap(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchConfigMapClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QuarkCMService_ServiceDesc.Streams[4], "/quarkcmsvc.QuarkCMService/WatchConfigMap", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &quarkCMServiceWatchConfigMapClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QuarkCMService_WatchConfigMapClient interface {
+	Recv() (*ConfigMapMessage, error)
+	grpc.ClientStream
+}
+
+type quarkCMServiceWatchConfigMapClient struct {
+	grpc.ClientStream
+}
+
+func (x *quarkCMServiceWatchConfigMapClient) Recv() (*ConfigMapMessage, error) {
+	m := new(ConfigMapMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // QuarkCMServiceServer is the server API for QuarkCMService service.
 // All implementations must embed UnimplementedQuarkCMServiceServer
 // for forward compatibility
@@ -230,6 +273,8 @@ type QuarkCMServiceServer interface {
 	WatchService(*MaxResourceVersionMessage, QuarkCMService_WatchServiceServer) error
 	ListEndpoints(context.Context, *emptypb.Empty) (*EndpointsListMessage, error)
 	WatchEndpoints(*MaxResourceVersionMessage, QuarkCMService_WatchEndpointsServer) error
+	ListConfigMap(context.Context, *emptypb.Empty) (*ConfigMapListMessage, error)
+	WatchConfigMap(*MaxResourceVersionMessage, QuarkCMService_WatchConfigMapServer) error
 	mustEmbedUnimplementedQuarkCMServiceServer()
 }
 
@@ -263,6 +308,12 @@ func (UnimplementedQuarkCMServiceServer) ListEndpoints(context.Context, *emptypb
 }
 func (UnimplementedQuarkCMServiceServer) WatchEndpoints(*MaxResourceVersionMessage, QuarkCMService_WatchEndpointsServer) error {
 	return status.Errorf(codes.Unimplemented, "method WatchEndpoints not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) ListConfigMap(context.Context, *emptypb.Empty) (*ConfigMapListMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListConfigMap not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) WatchConfigMap(*MaxResourceVersionMessage, QuarkCMService_WatchConfigMapServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchConfigMap not implemented")
 }
 func (UnimplementedQuarkCMServiceServer) mustEmbedUnimplementedQuarkCMServiceServer() {}
 
@@ -451,6 +502,45 @@ func (x *quarkCMServiceWatchEndpointsServer) Send(m *EndpointsMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _QuarkCMService_ListConfigMap_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuarkCMServiceServer).ListConfigMap(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quarkcmsvc.QuarkCMService/ListConfigMap",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuarkCMServiceServer).ListConfigMap(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuarkCMService_WatchConfigMap_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MaxResourceVersionMessage)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QuarkCMServiceServer).WatchConfigMap(m, &quarkCMServiceWatchConfigMapServer{stream})
+}
+
+type QuarkCMService_WatchConfigMapServer interface {
+	Send(*ConfigMapMessage) error
+	grpc.ServerStream
+}
+
+type quarkCMServiceWatchConfigMapServer struct {
+	grpc.ServerStream
+}
+
+func (x *quarkCMServiceWatchConfigMapServer) Send(m *ConfigMapMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // QuarkCMService_ServiceDesc is the grpc.ServiceDesc for QuarkCMService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -478,6 +568,10 @@ var QuarkCMService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListEndpoints",
 			Handler:    _QuarkCMService_ListEndpoints_Handler,
 		},
+		{
+			MethodName: "ListConfigMap",
+			Handler:    _QuarkCMService_ListConfigMap_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -498,6 +592,11 @@ var QuarkCMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "WatchEndpoints",
 			Handler:       _QuarkCMService_WatchEndpoints_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchConfigMap",
+			Handler:       _QuarkCMService_WatchConfigMap_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -17,10 +17,11 @@ limitations under the License.
 package constants
 
 const (
-	ResourceType_Pod       string = "pod"
-	ResourceType_Service   string = "service"
-	ResourceType_Endpoints string = "endpoints"
-	ResourceType_Node      string = "node"
+	ResourceType_Pod             string = "pod"
+	ResourceType_Service         string = "service"
+	ResourceType_Endpoints       string = "endpoints"
+	ResourceType_Node            string = "node"
+	ResourceType_SystemConfigMap string = "configmap"
 
 	EventType_Set    string = "set"
 	EventType_Delete string = "delete"

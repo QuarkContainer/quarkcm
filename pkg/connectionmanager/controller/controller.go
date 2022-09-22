@@ -81,6 +81,12 @@ func Start() {
 
 	go endpointsController.Run(endpointsStopCh)
 
+	configMapController := NewSystemConfigMapController(kubeClient)
+	configMapStopCh := make(chan struct{})
+	defer close(configMapStopCh)
+
+	go configMapController.Run(configMapStopCh)
+
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
 	signal.Notify(sigterm, syscall.SIGINT)
