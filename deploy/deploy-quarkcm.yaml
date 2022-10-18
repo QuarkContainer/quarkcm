@@ -111,3 +111,39 @@ spec:
           volumeMounts:
             - name: quarkrdma
               mountPath: /var/quarkrdma
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: quarkegress-daemon
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      job: quarkegress-daemon
+  template:
+    metadata:
+      labels:
+        job: quarkegress-daemon
+    spec:
+      tolerations:
+        # The daemon shall run on the master node
+        - effect: NoSchedule
+          operator: Exists
+      serviceAccountName: quarkcm-operator
+      terminationGracePeriodSeconds: 0
+      hostNetwork: true
+      hostPID: true
+      volumes:
+        - name: quarkegress
+          hostPath:
+            path: /var/quarkrdma
+            type: DirectoryOrCreate
+      containers:
+        - name: quarkegress-daemon
+          image: quarkcm/rdma_egress:v0.2.0
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: quarkegress
+              mountPath: /var/quarkrdma
