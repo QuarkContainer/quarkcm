@@ -14,27 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package objects
 
-import (
-	"fmt"
-
-	"github.com/spf13/cobra"
-)
-
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "print version",
-	Long:  `print version`,
-	Run: func(cmd *cobra.Command, args []string) {
-		versionPrettyString()
-	},
-}
-
-func versionPrettyString() {
-	fmt.Println("v0.2.0")
-}
-
-func init() {
-	RootCmd.AddCommand(versionCmd)
+type IngressEventObject struct {
+	ResourceVersion int
+	EventType       string
+	IngressObject   IngressObject
 }

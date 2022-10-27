@@ -17,11 +17,14 @@ limitations under the License.
 package controller
 
 import (
+	"context"
+
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/constants"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/handlers"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
 	"github.com/google/uuid"
 	api_v1 "k8s.io/api/core/v1"
+	networking_v1 "k8s.io/api/networking/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -37,10 +40,10 @@ func NewPodController(client kubernetes.Interface) *Controller {
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Pods("").List(options)
+				return client.CoreV1().Pods("").List(context.TODO(), options)
 			},
 			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-				return client.CoreV1().Pods("").Watch(options)
+				return client.CoreV1().Pods("").Watch(context.TODO(), options)
 			},
 		},
 		&api_v1.Pod{},
@@ -55,10 +58,10 @@ func NewServiceController(client kubernetes.Interface) *Controller {
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Services("").List(options)
+				return client.CoreV1().Services("").List(context.TODO(), options)
 			},
 			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-				return client.CoreV1().Services("").Watch(options)
+				return client.CoreV1().Services("").Watch(context.TODO(), options)
 			},
 		},
 		&api_v1.Service{},
@@ -73,10 +76,10 @@ func NewEndpointsController(client kubernetes.Interface) *Controller {
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Endpoints("").List(options)
+				return client.CoreV1().Endpoints("").List(context.TODO(), options)
 			},
 			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-				return client.CoreV1().Endpoints("").Watch(options)
+				return client.CoreV1().Endpoints("").Watch(context.TODO(), options)
 			},
 		},
 		&api_v1.Endpoints{},
@@ -91,10 +94,10 @@ func NewNodeController(client kubernetes.Interface) *Controller {
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().Nodes().List(options)
+				return client.CoreV1().Nodes().List(context.TODO(), options)
 			},
 			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-				return client.CoreV1().Nodes().Watch(options)
+				return client.CoreV1().Nodes().Watch(context.TODO(), options)
 			},
 		},
 		&api_v1.Node{},
@@ -109,10 +112,10 @@ func NewSystemConfigMapController(client kubernetes.Interface) *Controller {
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-				return client.CoreV1().ConfigMaps("kube-system").List(options)
+				return client.CoreV1().ConfigMaps("kube-system").List(context.TODO(), options)
 			},
 			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-				return client.CoreV1().ConfigMaps("kube-system").Watch(options)
+				return client.CoreV1().ConfigMaps("kube-system").Watch(context.TODO(), options)
 			},
 		},
 		&api_v1.ConfigMap{},
@@ -120,6 +123,24 @@ func NewSystemConfigMapController(client kubernetes.Interface) *Controller {
 		cache.Indexers{},
 	)
 	return newResourceController(client, eventHandler, informer, constants.ResourceType_SystemConfigMap)
+}
+
+func NewIngressController(client kubernetes.Interface) *Controller {
+	var eventHandler handlers.Handler = new(handlers.IngressHandler)
+	informer := cache.NewSharedIndexInformer(
+		&cache.ListWatch{
+			ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+				return client.NetworkingV1().Ingresses("").List(context.TODO(), options)
+			},
+			WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+				return client.NetworkingV1().Ingresses("").Watch(context.TODO(), options)
+			},
+		},
+		&networking_v1.Ingress{},
+		0,
+		cache.Indexers{},
+	)
+	return newResourceController(client, eventHandler, informer, constants.ResourceType_Ingress)
 }
 
 func newResourceController(client kubernetes.Interface, eventHandler handlers.Handler, informer cache.SharedIndexInformer, resourceType string) *Controller {
