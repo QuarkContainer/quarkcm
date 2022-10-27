@@ -87,6 +87,12 @@ func Start() {
 
 	go configMapController.Run(configMapStopCh)
 
+	ingressController := NewIngressController(kubeClient)
+	ingressStopCh := make(chan struct{})
+	defer close(ingressStopCh)
+
+	go ingressController.Run(ingressStopCh)
+
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
 	signal.Notify(sigterm, syscall.SIGINT)

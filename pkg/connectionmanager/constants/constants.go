@@ -22,6 +22,7 @@ const (
 	ResourceType_Endpoints       string = "endpoints"
 	ResourceType_Node            string = "node"
 	ResourceType_SystemConfigMap string = "configmap"
+	ResourceType_Ingress         string = "ingress"
 
 	EventType_Set    string = "set"
 	EventType_Delete string = "delete"

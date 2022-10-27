@@ -5,7 +5,7 @@ metadata:
   name: quarkcm-operator
 rules:
 - apiGroups: [""]
-  resources: ["pods", "nodes", "services", "endpoints", "configmaps"]
+  resources: ["pods", "nodes", "services", "endpoints", "configmaps", "ingress"]
   verbs: ["get", "watch", "list"]
 ---
 apiVersion: v1

@@ -479,3 +479,86 @@ func sendConfigMapStream(stream QuarkCMService_WatchConfigMapServer, configMapEv
 	}
 	return nil
 }
+
+func (s *server) ListIngress(ctx context.Context, in *emptypb.Empty) (*IngressListMessage, error) {
+	klog.Info("grpc Ingress called ListIngress")
+
+	ingressEventObjects := datastore.ListIngress(0)
+	length := len(ingressEventObjects)
+	ingressMessages := make([]*IngressMessage, 0, length)
+	for i := 0; i < length; i++ {
+		ingressEventObject := ingressEventObjects[i]
+		ingressMessages = append(ingressMessages, &IngressMessage{
+			Name:            ingressEventObject.IngressObject.Name,
+			Service:         ingressEventObject.IngressObject.Service,
+			PortNumber:      uint32(ingressEventObject.IngressObject.PortNumber),
+			ResourceVersion: int32(ingressEventObject.ResourceVersion),
+			EventType:       ingressEventObject.EventType,
+		})
+	}
+
+	return &IngressListMessage{Ingresss: ingressMessages}, nil
+}
+
+func (s *server) WatchIngress(maxResourceVersionMessage *MaxResourceVersionMessage, stream QuarkCMService_WatchIngressServer) error {
+	klog.Info("grpc Ingress called WatchIngress")
+
+	key := uuid.New()
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer queue.ShutDown()
+	datastore.AddIngressQueue(key, queue)
+	defer datastore.RemoveIngressQueue(key)
+
+	ingressEventObjects := datastore.ListIngress(int(maxResourceVersionMessage.MaxResourceVersion))
+	for _, ingressEventObject := range ingressEventObjects {
+		if err := sendIngressStream(stream, &ingressEventObject); err != nil {
+			return err
+		}
+	}
+
+	for {
+		exit, err := processNextIngress(queue, stream)
+		if exit {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processNextIngress(queue workqueue.RateLimitingInterface, stream QuarkCMService_WatchIngressServer) (bool, error) {
+	ingressEventObject, exit := dequeueIngress(queue)
+	if exit {
+		return exit, nil
+	}
+	return exit, sendIngressStream(stream, ingressEventObject)
+}
+
+func dequeueIngress(queue workqueue.RateLimitingInterface) (*objects.IngressEventObject, bool) {
+	queueItem, exit := queue.Get()
+	if exit {
+		return nil, exit
+	}
+	ingressEventObject := queueItem.(objects.IngressEventObject)
+	queue.Forget(queueItem)
+	// defer queue.Done(queueItem)
+	queue.Done(queueItem)
+	return &ingressEventObject, exit
+}
+
+func sendIngressStream(stream QuarkCMService_WatchIngressServer, ingressEventObject *objects.IngressEventObject) error {
+	ingressMessage := &IngressMessage{
+		Name:            ingressEventObject.IngressObject.Name,
+		Service:         ingressEventObject.IngressObject.Service,
+		PortNumber:      uint32(ingressEventObject.IngressObject.PortNumber),
+		ResourceVersion: int32(ingressEventObject.ResourceVersion),
+		EventType:       ingressEventObject.EventType,
+	}
+	if err := stream.Send(ingressMessage); err != nil {
+		return err
+	}
+	return nil
+}

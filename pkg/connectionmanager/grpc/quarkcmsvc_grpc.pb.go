@@ -35,6 +35,8 @@ type QuarkCMServiceClient interface {
 	WatchEndpoints(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchEndpointsClient, error)
 	ListConfigMap(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ConfigMapListMessage, error)
 	WatchConfigMap(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchConfigMapClient, error)
+	ListIngress(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*IngressListMessage, error)
+	WatchIngress(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchIngressClient, error)
 }
 
 type quarkCMServiceClient struct {
@@ -259,6 +261,47 @@ func (x *quarkCMServiceWatchConfigMapClient) Recv() (*ConfigMapMessage, error) {
 	return m, nil
 }
 
+func (c *quarkCMServiceClient) ListIngress(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*IngressListMessage, error) {
+	out := new(IngressListMessage)
+	err := c.cc.Invoke(ctx, "/quarkcmsvc.QuarkCMService/ListIngress", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *quarkCMServiceClient) WatchIngress(ctx context.Context, in *MaxResourceVersionMessage, opts ...grpc.CallOption) (QuarkCMService_WatchIngressClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QuarkCMService_ServiceDesc.Streams[5], "/quarkcmsvc.QuarkCMService/WatchIngress", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &quarkCMServiceWatchIngressClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QuarkCMService_WatchIngressClient interface {
+	Recv() (*IngressMessage, error)
+	grpc.ClientStream
+}
+
+type quarkCMServiceWatchIngressClient struct {
+	grpc.ClientStream
+}
+
+func (x *quarkCMServiceWatchIngressClient) Recv() (*IngressMessage, error) {
+	m := new(IngressMessage)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // QuarkCMServiceServer is the server API for QuarkCMService service.
 // All implementations must embed UnimplementedQuarkCMServiceServer
 // for forward compatibility
@@ -275,6 +318,8 @@ type QuarkCMServiceServer interface {
 	WatchEndpoints(*MaxResourceVersionMessage, QuarkCMService_WatchEndpointsServer) error
 	ListConfigMap(context.Context, *emptypb.Empty) (*ConfigMapListMessage, error)
 	WatchConfigMap(*MaxResourceVersionMessage, QuarkCMService_WatchConfigMapServer) error
+	ListIngress(context.Context, *emptypb.Empty) (*IngressListMessage, error)
+	WatchIngress(*MaxResourceVersionMessage, QuarkCMService_WatchIngressServer) error
 	mustEmbedUnimplementedQuarkCMServiceServer()
 }
 
@@ -314,6 +359,12 @@ func (UnimplementedQuarkCMServiceServer) ListConfigMap(context.Context, *emptypb
 }
 func (UnimplementedQuarkCMServiceServer) WatchConfigMap(*MaxResourceVersionMessage, QuarkCMService_WatchConfigMapServer) error {
 	return status.Errorf(codes.Unimplemented, "method WatchConfigMap not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) ListIngress(context.Context, *emptypb.Empty) (*IngressListMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListIngress not implemented")
+}
+func (UnimplementedQuarkCMServiceServer) WatchIngress(*MaxResourceVersionMessage, QuarkCMService_WatchIngressServer) error {
+	return status.Errorf(codes.Unimplemented, "method WatchIngress not implemented")
 }
 func (UnimplementedQuarkCMServiceServer) mustEmbedUnimplementedQuarkCMServiceServer() {}
 
@@ -541,6 +592,45 @@ func (x *quarkCMServiceWatchConfigMapServer) Send(m *ConfigMapMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _QuarkCMService_ListIngress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QuarkCMServiceServer).ListIngress(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/quarkcmsvc.QuarkCMService/ListIngress",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QuarkCMServiceServer).ListIngress(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QuarkCMService_WatchIngress_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(MaxResourceVersionMessage)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QuarkCMServiceServer).WatchIngress(m, &quarkCMServiceWatchIngressServer{stream})
+}
+
+type QuarkCMService_WatchIngressServer interface {
+	Send(*IngressMessage) error
+	grpc.ServerStream
+}
+
+type quarkCMServiceWatchIngressServer struct {
+	grpc.ServerStream
+}
+
+func (x *quarkCMServiceWatchIngressServer) Send(m *IngressMessage) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // QuarkCMService_ServiceDesc is the grpc.ServiceDesc for QuarkCMService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -572,6 +662,10 @@ var QuarkCMService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "ListConfigMap",
 			Handler:    _QuarkCMService_ListConfigMap_Handler,
 		},
+		{
+			MethodName: "ListIngress",
+			Handler:    _QuarkCMService_ListIngress_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -597,6 +691,11 @@ var QuarkCMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "WatchConfigMap",
 			Handler:       _QuarkCMService_WatchConfigMap_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "WatchIngress",
+			Handler:       _QuarkCMService_WatchIngress_Handler,
 			ServerStreams: true,
 		},
 	},
