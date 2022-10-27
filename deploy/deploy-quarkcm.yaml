@@ -5,7 +5,10 @@ metadata:
   name: quarkcm-operator
 rules:
 - apiGroups: [""]
-  resources: ["pods", "nodes", "services", "endpoints", "configmaps", "ingress"]
+  resources: ["pods", "nodes", "services", "endpoints", "configmaps"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
   verbs: ["get", "watch", "list"]
 ---
 apiVersion: v1
