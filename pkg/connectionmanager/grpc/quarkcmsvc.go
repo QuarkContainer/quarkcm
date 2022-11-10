@@ -497,7 +497,7 @@ func (s *server) ListIngress(ctx context.Context, in *emptypb.Empty) (*IngressLi
 		})
 	}
 
-	return &IngressListMessage{Ingresss: ingressMessages}, nil
+	return &IngressListMessage{Ingresses: ingressMessages}, nil
 }
 
 func (s *server) WatchIngress(maxResourceVersionMessage *MaxResourceVersionMessage, stream QuarkCMService_WatchIngressServer) error {
