@@ -16,8 +16,15 @@ limitations under the License.
 
 package objects
 
+import "encoding/json"
+
 type EndpointsObject struct {
 	Name            string
 	IPWithPorts     []string
 	ResourceVersion int
+}
+
+func (obj EndpointsObject) String() string {
+	str, _ := json.Marshal(obj)
+	return string(str)
 }

@@ -1,0 +1,12 @@
+apiVersion: quarksoft.io/v1alpha1
+kind: RdmaIngress
+metadata:
+  name: testingress
+spec:
+  rules:
+  - port: 8080
+    service: test
+    targetport: 7000
+  - port: 8000
+    service: test1
+    targetport: 7001

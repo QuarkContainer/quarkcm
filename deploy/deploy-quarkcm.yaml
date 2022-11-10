@@ -10,6 +10,9 @@ rules:
 - apiGroups: ["networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["get", "watch", "list"]
+- apiGroups: ["quarksoft.io"]
+  resources: ["rdmaingresses"]
+  verbs: ["get", "watch", "list"]
 ---
 apiVersion: v1
 kind: ServiceAccount
