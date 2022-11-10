@@ -117,7 +117,7 @@ message IngressMessage {
 }
 
 message IngressListMessage {
-    repeated IngressMessage Ingresss = 1;
+    repeated IngressMessage Ingresses = 1;
 }
 
 message MaxResourceVersionMessage {
