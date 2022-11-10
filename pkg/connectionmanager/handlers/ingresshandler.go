@@ -37,7 +37,9 @@ func (d *IngressHandler) Handle(eventItem objects.EventItem) {
 }
 
 func handleIngressSet(eventItem objects.EventItem, ingress *v1.Ingress) {
-	service := ingress.Spec.DefaultBackend.Service.Name
-	portNumber := ingress.Spec.DefaultBackend.Service.Port.Number
-	datastore.SetIngress(eventItem.Key, service, uint16(portNumber), eventItem.Id)
+	if ingress.Spec.DefaultBackend != nil {
+		service := ingress.Spec.DefaultBackend.Service.Name
+		portNumber := ingress.Spec.DefaultBackend.Service.Port.Number
+		datastore.SetIngress(eventItem.Key, service, uint16(portNumber), eventItem.Id)
+	}
 }

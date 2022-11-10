@@ -12,14 +12,20 @@ require (
 	github.com/smartystreets/goconvey v1.7.2
 	github.com/spf13/cobra v0.0.1
 	github.com/vishvananda/netlink v1.2.0-beta
-	golang.org/x/net v0.0.0-20220407224826-aac1ed45d8e3 // indirect
-	golang.org/x/sys v0.0.0-20220408201424-a24fb2fb8a0f // indirect
 	google.golang.org/genproto v0.0.0-20220407144326-9054f6ed7bac // indirect
 	google.golang.org/grpc v1.45.0
-	google.golang.org/protobuf v1.28.0
-	k8s.io/api v0.21.2
-	k8s.io/apimachinery v0.21.2
-	k8s.io/client-go v0.21.2
+	google.golang.org/protobuf v1.28.1
+	k8s.io/api v0.0.0-20221108053747-3f61c95cab71
+	k8s.io/apimachinery v0.0.0-20221108052757-4fe4321a9d5e
+	k8s.io/client-go v0.0.0-20221108054908-3daf180aa6b1
+	k8s.io/code-generator v0.0.0-20221108000200-7429fbb99432
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.60.1
+	k8s.io/klog/v2 v2.80.1
+)
+
+replace (
+	k8s.io/api => k8s.io/api v0.0.0-20221108053747-3f61c95cab71
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20221108052757-4fe4321a9d5e
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20221108054908-3daf180aa6b1
+	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20221108000200-7429fbb99432
 )

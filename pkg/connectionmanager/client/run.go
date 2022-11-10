@@ -19,10 +19,12 @@ package client
 import (
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/controller"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/grpc"
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/rdmaingresscontroller"
 )
 
 // Run runs the event loop processing with given handler
 func Run() {
 	grpc.StartServer()
+	rdmaingresscontroller.Start()
 	controller.Start()
 }

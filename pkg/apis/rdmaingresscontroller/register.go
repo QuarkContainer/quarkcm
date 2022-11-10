@@ -1,5 +1,5 @@
 /*
-Copyright 2022 quarkcm Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package objects
+package rdmaingresscontroller
 
-import "encoding/json"
-
-type ServiceObject struct {
-	Name            string
-	ClusterIP       string
-	Ports           []string
-	ResourceVersion int
-}
-
-func (obj ServiceObject) String() string {
-	str, _ := json.Marshal(obj)
-	return string(str)
-}
+// GroupName is the group name used in this package
+const (
+	GroupName = "quarksoft.io"
+)
