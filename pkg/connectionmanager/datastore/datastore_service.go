@@ -18,7 +18,7 @@ package datastore
 
 import (
 	"encoding/json"
-	"reflect"
+	"strings"
 
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/constants"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
@@ -39,8 +39,9 @@ func SetService(name string, clusterIP string, ports []string, trackingId string
 	serviceMap := Instance().ServiceMap
 	service, exists := serviceMap[name]
 	changed := false
+	portsStr := strings.Join(ports, ",")
 	if exists {
-		if service.ClusterIP != clusterIP || !reflect.DeepEqual(service.Ports, ports) {
+		if service.ClusterIP != clusterIP || service.Ports != portsStr {
 			changed = true
 		} else {
 			klog.Infof("Handling service completed. Service %s is unchanged. Tracking Id: %s", name, trackingId)
@@ -54,7 +55,7 @@ func SetService(name string, clusterIP string, ports []string, trackingId string
 		newService := &objects.ServiceObject{
 			Name:            name,
 			ClusterIP:       clusterIP,
-			Ports:           ports,
+			Ports:           portsStr,
 			ResourceVersion: resourceVersion,
 		}
 		newServiceEvent := &objects.ServiceEventObject{

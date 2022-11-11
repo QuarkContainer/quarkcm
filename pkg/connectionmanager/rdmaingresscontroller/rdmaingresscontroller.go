@@ -21,7 +21,6 @@ import (
 	"os"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -31,11 +30,15 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/constants"
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/handlers"
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
 	clientset "github.com/CentaurusInfra/quarkcm/pkg/generated/clientset/versioned"
 	rdmaingressscheme "github.com/CentaurusInfra/quarkcm/pkg/generated/clientset/versioned/scheme"
 	informersFactory "github.com/CentaurusInfra/quarkcm/pkg/generated/informers/externalversions"
 	informers "github.com/CentaurusInfra/quarkcm/pkg/generated/informers/externalversions/rdmaingresscontroller/v1alpha1"
 	listers "github.com/CentaurusInfra/quarkcm/pkg/generated/listers/rdmaingresscontroller/v1alpha1"
+	"github.com/google/uuid"
 )
 
 // RdmaController is the controller implementation for RdmaIngress resources
@@ -52,6 +55,8 @@ type RdmaController struct {
 	// time, and makes it easy to ensure we are never processing the same item
 	// simultaneously in two different workers.
 	workqueue workqueue.RateLimitingInterface
+
+	eventHandler handlers.Handler
 }
 
 // NewController returns a new rdmaingress controller
@@ -69,14 +74,20 @@ func NewRdmaController(
 		rdmaIngressesLister:  rdmaIngressInformer.Lister(),
 		rdmaIngressesSynced:  rdmaIngressInformer.Informer().HasSynced,
 		workqueue:            workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "RdmaIngresses"),
+		eventHandler:         new(handlers.RdmaIngressHandler),
 	}
 
 	klog.Info("Setting up event handlers")
 	// Set up an event handler for when RdmaIngress resources change
 	rdmaIngressInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.handleObject,
-		UpdateFunc: func(old, new interface{}) {
-			controller.enqueueRdmaIngress(new)
+		AddFunc: func(obj interface{}) {
+			controller.enqueueRdmaIngress(obj, constants.EventType_Set)
+		},
+		UpdateFunc: func(old, obj interface{}) {
+			controller.enqueueRdmaIngress(obj, constants.EventType_Set)
+		},
+		DeleteFunc: func(obj interface{}) {
+			controller.enqueueRdmaIngress(obj, constants.EventType_Delete)
 		},
 	})
 
@@ -106,7 +117,7 @@ func Start() {
 	defer close(stopCh)
 	rdmaIngressInformerFactory.Start(stopCh)
 
-	if err = controller.Run(2, stopCh); err != nil {
+	if err = controller.Run(1, stopCh); err != nil {
 		klog.Fatalf("Error running RdmaIngress controller: %s", err.Error())
 	}
 }
@@ -143,8 +154,8 @@ func (c *RdmaController) Run(workers int, stopCh <-chan struct{}) error {
 	}
 
 	klog.Info("Started RdmaIngress workers")
-	// <-stopCh
-	// klog.Info("Shutting down RdmaIngress workers")
+	<-stopCh
+	klog.Info("Shutting down RdmaIngress workers")
 
 	return nil
 }
@@ -165,78 +176,22 @@ func (c *RdmaController) processNextWorkItem() bool {
 		return false
 	}
 
-	// We wrap this block in a func so we can defer c.workqueue.Done.
-	err := func(obj interface{}) error {
-		// We call Done here so the workqueue knows we have finished
-		// processing this item. We also must remember to call Forget if we
-		// do not want this work item being re-queued. For example, we do
-		// not call Forget if a transient error occurs, instead the item is
-		// put back on the workqueue and attempted again after a back-off
-		// period.
-		defer c.workqueue.Done(obj)
-		var key string
-		var ok bool
-		// We expect strings to come off the workqueue. These are of the
-		// form namespace/name. We do this as the delayed nature of the
-		// workqueue means the items in the informer cache may actually be
-		// more up to date that when the item was initially put onto the
-		// workqueue.
-		if key, ok = obj.(string); !ok {
-			// As the item in the workqueue is actually invalid, we call
-			// Forget here else we'd go into a loop of attempting to
-			// process a work item that is invalid.
-			c.workqueue.Forget(obj)
-			utilruntime.HandleError(fmt.Errorf("expected string in workqueue but got %#v", obj))
-			return nil
-		}
-		// Finally, if no error occurs we Forget this item so it does not
-		// get queued again until another change happens.
-		c.workqueue.Forget(obj)
-		klog.Infof("Successfully synced '%s'", key)
-		return nil
-	}(obj)
-
-	if err != nil {
-		utilruntime.HandleError(err)
-		return true
-	}
+	c.eventHandler.Handle(obj.(objects.EventItem))
+	c.workqueue.Forget(obj)
 
 	return true
 }
 
-// enqueueRdmaIngress takes a RdmaIngress resource and converts it into a namespace/name
-// string which is then put onto the work queue. This method should *not* be
-// passed resources of any type other than RdmaIngress.
-func (c *RdmaController) enqueueRdmaIngress(obj interface{}) {
-	var key string
+func (c *RdmaController) enqueueRdmaIngress(obj interface{}, eventType string) {
+	var eventItem objects.EventItem
 	var err error
-	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+	eventItem.Key, err = cache.MetaNamespaceKeyFunc(obj)
+	if err != nil {
 		utilruntime.HandleError(err)
 		return
 	}
-	c.workqueue.Add(key)
-}
-
-// handleObject will take any resource implementing metav1.Object and attempt
-// to find the RdmaIngress resource that 'owns' it. It does this by looking at the
-// objects metadata.ownerReferences field for an appropriate OwnerReference.
-// It then enqueues that RdmaIngress resource to be processed. If the object does not
-// have an appropriate OwnerReference, it will simply be skipped.
-func (c *RdmaController) handleObject(obj interface{}) {
-	var object metav1.Object
-	var ok bool
-	if object, ok = obj.(metav1.Object); !ok {
-		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
-		if !ok {
-			utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
-			return
-		}
-		object, ok = tombstone.Obj.(metav1.Object)
-		if !ok {
-			utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
-			return
-		}
-		klog.V(4).Infof("Recovered deleted object '%s' from tombstone", object.GetName())
-	}
-	klog.Infof("Processing object: %s", object.GetName())
+	eventItem.EventType = eventType
+	eventItem.Id = uuid.New().String()
+	eventItem.Obj = obj
+	c.workqueue.Add(eventItem)
 }

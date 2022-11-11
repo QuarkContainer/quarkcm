@@ -16,16 +16,9 @@ limitations under the License.
 
 package objects
 
-import "encoding/json"
-
 type ServiceObject struct {
 	Name            string
 	ClusterIP       string
-	Ports           []string
+	Ports           string
 	ResourceVersion int
-}
-
-func (obj ServiceObject) String() string {
-	str, _ := json.Marshal(obj)
-	return string(str)
 }

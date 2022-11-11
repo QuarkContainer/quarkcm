@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -246,7 +247,7 @@ func (s *server) ListService(ctx context.Context, in *emptypb.Empty) (*ServiceLi
 		serviceMessages = append(serviceMessages, &ServiceMessage{
 			Name:            serviceEventObject.ServiceObject.Name,
 			ClusterIp:       utils.ConvertIP(serviceEventObject.ServiceObject.ClusterIP),
-			Ports:           serviceEventObject.ServiceObject.Ports,
+			Ports:           strings.Split(serviceEventObject.ServiceObject.Ports, ","),
 			ResourceVersion: int32(serviceEventObject.ResourceVersion),
 			EventType:       serviceEventObject.EventType,
 		})
@@ -308,7 +309,7 @@ func sendServiceStream(stream QuarkCMService_WatchServiceServer, serviceEventObj
 	serviceMessage := &ServiceMessage{
 		Name:            serviceEventObject.ServiceObject.Name,
 		ClusterIp:       utils.ConvertIP(serviceEventObject.ServiceObject.ClusterIP),
-		Ports:           serviceEventObject.ServiceObject.Ports,
+		Ports:           strings.Split(serviceEventObject.ServiceObject.Ports, ","),
 		ResourceVersion: int32(serviceEventObject.ResourceVersion),
 		EventType:       serviceEventObject.EventType,
 	}
@@ -328,7 +329,7 @@ func (s *server) ListEndpoints(ctx context.Context, in *emptypb.Empty) (*Endpoin
 		endpointsEventObject := endpointsEventObjects[i]
 		endpointsMessages = append(endpointsMessages, &EndpointsMessage{
 			Name:            endpointsEventObject.EndpointsObject.Name,
-			IpWithPorts:     endpointsEventObject.EndpointsObject.IPWithPorts,
+			IpWithPorts:     strings.Split(endpointsEventObject.EndpointsObject.IPWithPorts, ","),
 			ResourceVersion: int32(endpointsEventObject.ResourceVersion),
 			EventType:       endpointsEventObject.EventType,
 		})
@@ -389,7 +390,7 @@ func dequeueEndpoints(queue workqueue.RateLimitingInterface) (*objects.Endpoints
 func sendEndpointsStream(stream QuarkCMService_WatchEndpointsServer, endpointsEventObject *objects.EndpointsEventObject) error {
 	endpointsMessage := &EndpointsMessage{
 		Name:            endpointsEventObject.EndpointsObject.Name,
-		IpWithPorts:     endpointsEventObject.EndpointsObject.IPWithPorts,
+		IpWithPorts:     strings.Split(endpointsEventObject.EndpointsObject.IPWithPorts, ","),
 		ResourceVersion: int32(endpointsEventObject.ResourceVersion),
 		EventType:       endpointsEventObject.EventType,
 	}

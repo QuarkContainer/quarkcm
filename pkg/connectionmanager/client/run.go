@@ -25,6 +25,6 @@ import (
 // Run runs the event loop processing with given handler
 func Run() {
 	grpc.StartServer()
-	rdmaingresscontroller.Start()
+	go rdmaingresscontroller.Start()
 	controller.Start()
 }

@@ -18,7 +18,7 @@ package datastore
 
 import (
 	"encoding/json"
-	"reflect"
+	"strings"
 
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/constants"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
@@ -39,8 +39,9 @@ func SetEndpoints(name string, ipWithPorts []string, trackingId string) {
 	endpointsMap := Instance().EndpointsMap
 	endpoints, exists := endpointsMap[name]
 	changed := false
+	ipWithPortsStr := strings.Join(ipWithPorts, ",")
 	if exists {
-		if !reflect.DeepEqual(endpoints.IPWithPorts, ipWithPorts) {
+		if endpoints.IPWithPorts != ipWithPortsStr {
 			changed = true
 		} else {
 			klog.Infof("Handling endpoints completed. Endpoints %s is unchanged. Tracking Id: %s", name, trackingId)
@@ -53,7 +54,7 @@ func SetEndpoints(name string, ipWithPorts []string, trackingId string) {
 		resourceVersion := calculateNextEndpointsResourceVersion()
 		newEndpoints := &objects.EndpointsObject{
 			Name:            name,
-			IPWithPorts:     ipWithPorts,
+			IPWithPorts:     ipWithPortsStr,
 			ResourceVersion: resourceVersion,
 		}
 		newEndpointsEvent := &objects.EndpointsEventObject{
