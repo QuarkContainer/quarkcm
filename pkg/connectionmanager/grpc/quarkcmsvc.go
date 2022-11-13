@@ -563,3 +563,86 @@ func sendIngressStream(stream QuarkCMService_WatchIngressServer, ingressEventObj
 	}
 	return nil
 }
+
+func (s *server) ListRdmaIngress(ctx context.Context, in *emptypb.Empty) (*RdmaIngressListMessage, error) {
+	klog.Info("grpc RdmaIngress called ListRdmaIngress")
+
+	rdmaIngressEventObjects := datastore.ListRdmaIngress(0)
+	length := len(rdmaIngressEventObjects)
+	rdmaIngressMessages := make([]*RdmaIngressMessage, 0, length)
+	for i := 0; i < length; i++ {
+		rdmaIngressEventObject := rdmaIngressEventObjects[i]
+		rdmaIngressMessages = append(rdmaIngressMessages, &RdmaIngressMessage{
+			PortNumber:       uint32(rdmaIngressEventObject.RdmaIngressObject.PortNumber),
+			Service:          rdmaIngressEventObject.RdmaIngressObject.Service,
+			TargetPortNumber: uint32(rdmaIngressEventObject.RdmaIngressObject.TargetPortNumber),
+			ResourceVersion:  int32(rdmaIngressEventObject.ResourceVersion),
+			EventType:        rdmaIngressEventObject.EventType,
+		})
+	}
+
+	return &RdmaIngressListMessage{RdmaIngresses: rdmaIngressMessages}, nil
+}
+
+func (s *server) WatchRdmaIngress(maxResourceVersionMessage *MaxResourceVersionMessage, stream QuarkCMService_WatchRdmaIngressServer) error {
+	klog.Info("grpc RdmaIngress called WatchRdmaIngress")
+
+	key := uuid.New()
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer queue.ShutDown()
+	datastore.AddRdmaIngressQueue(key, queue)
+	defer datastore.RemoveRdmaIngressQueue(key)
+
+	rdmaIngressEventObjects := datastore.ListRdmaIngress(int(maxResourceVersionMessage.MaxResourceVersion))
+	for _, rdmaIngressEventObject := range rdmaIngressEventObjects {
+		if err := sendRdmaIngressStream(stream, &rdmaIngressEventObject); err != nil {
+			return err
+		}
+	}
+
+	for {
+		exit, err := processNextRdmaIngress(queue, stream)
+		if exit {
+			break
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processNextRdmaIngress(queue workqueue.RateLimitingInterface, stream QuarkCMService_WatchRdmaIngressServer) (bool, error) {
+	rdmaIngressEventObject, exit := dequeueRdmaIngress(queue)
+	if exit {
+		return exit, nil
+	}
+	return exit, sendRdmaIngressStream(stream, rdmaIngressEventObject)
+}
+
+func dequeueRdmaIngress(queue workqueue.RateLimitingInterface) (*objects.RdmaIngressEventObject, bool) {
+	queueItem, exit := queue.Get()
+	if exit {
+		return nil, exit
+	}
+	rdmaIngressEventObject := queueItem.(objects.RdmaIngressEventObject)
+	queue.Forget(queueItem)
+	// defer queue.Done(queueItem)
+	queue.Done(queueItem)
+	return &rdmaIngressEventObject, exit
+}
+
+func sendRdmaIngressStream(stream QuarkCMService_WatchRdmaIngressServer, rdmaIngressEventObject *objects.RdmaIngressEventObject) error {
+	rdmaIngressMessage := &RdmaIngressMessage{
+		PortNumber:       uint32(rdmaIngressEventObject.RdmaIngressObject.PortNumber),
+		Service:          rdmaIngressEventObject.RdmaIngressObject.Service,
+		TargetPortNumber: uint32(rdmaIngressEventObject.RdmaIngressObject.TargetPortNumber),
+		ResourceVersion:  int32(rdmaIngressEventObject.ResourceVersion),
+		EventType:        rdmaIngressEventObject.EventType,
+	}
+	if err := stream.Send(rdmaIngressMessage); err != nil {
+		return err
+	}
+	return nil
+}
