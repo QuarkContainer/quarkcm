@@ -55,6 +55,11 @@ type DataStore struct {
 	IngressMap             map[string]*objects.IngressObject             // map[key] => ingress object
 	IngressEventMap        map[int]*objects.IngressEventObject           // map[resource version] => ingress event object
 	IngressQueueMap        map[uuid.UUID]workqueue.RateLimitingInterface // map[guid] => ingress queue
+
+	RdmaIngressResourceVersion int
+	RdmaIngressMap             map[uint16]*objects.RdmaIngressObject         // map[key] => rdmaingress object
+	RdmaIngressEventMap        map[int]*objects.RdmaIngressEventObject       // map[resource version] => rdmaingress event object
+	RdmaIngressQueueMap        map[uuid.UUID]workqueue.RateLimitingInterface // map[guid] => rdmaingress queue
 }
 
 var lock = &sync.Mutex{}
@@ -96,6 +101,11 @@ func Instance() *DataStore {
 				IngressMap:             map[string]*objects.IngressObject{},
 				IngressEventMap:        map[int]*objects.IngressEventObject{},
 				IngressQueueMap:        map[uuid.UUID]workqueue.RateLimitingInterface{},
+
+				RdmaIngressResourceVersion: 0,
+				RdmaIngressMap:             map[uint16]*objects.RdmaIngressObject{},
+				RdmaIngressEventMap:        map[int]*objects.RdmaIngressEventObject{},
+				RdmaIngressQueueMap:        map[uuid.UUID]workqueue.RateLimitingInterface{},
 			}
 		}
 	}

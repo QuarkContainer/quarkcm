@@ -19,6 +19,7 @@ package handlers
 import (
 	v1alpha1 "github.com/CentaurusInfra/quarkcm/pkg/apis/rdmaingresscontroller/v1alpha1"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/constants"
+	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/datastore"
 	"github.com/CentaurusInfra/quarkcm/pkg/connectionmanager/objects"
 	"k8s.io/klog"
 )
@@ -27,13 +28,15 @@ type RdmaIngressHandler struct {
 }
 
 func (d *RdmaIngressHandler) Handle(eventItem objects.EventItem) {
-	klog.Infof("Handle rdma ingress event %s:%s. Tracking Id: %s", eventItem.Key, eventItem.EventType, eventItem.Id)
-	if eventItem.EventType == constants.EventType_Delete {
-		// datastore.DeleteRdmaIngress(eventItem.Key, eventItem.Id)
-	} else {
-		handleRdmaIngressSet(eventItem, eventItem.Obj.(*v1alpha1.RdmaIngress))
+	klog.Infof("Handle rdmaingress event %s:%s. Tracking Id: %s", eventItem.Key, eventItem.EventType, eventItem.Id)
+	rdmaIngress := eventItem.Obj.(*v1alpha1.RdmaIngress)
+	for _, rule := range rdmaIngress.Spec.Rules {
+		port := uint16(rule.Port)
+		if eventItem.EventType == constants.EventType_Delete {
+			datastore.DeleteRdmaIngress(port, eventItem.Id)
+		} else {
+			datastore.SetRdmaIngress(port, rule.Service, uint16(rule.TargetPort), eventItem.Id)
+		}
 	}
-}
 
-func handleRdmaIngressSet(eventItem objects.EventItem, rdmaIngress *v1alpha1.RdmaIngress) {
 }
