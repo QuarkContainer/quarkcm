@@ -21,7 +21,8 @@ ls /var
 cp -rf /var/quarkcni /home/
 mkdir -p /etc/cni/net.d
 
-nsenter -t 1 -m -u -n -i apt-get update -y && nsenter -t 1 -m -u -n -i apt-get install -y \
+nsenter -t 1 -m -u -n -i apt-get update -y || true 
+nsenter -t 1 -m -u -n -i apt-get install -y \
     sudo \
     rpcbind \
     rsyslog \

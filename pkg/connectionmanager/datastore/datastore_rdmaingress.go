@@ -42,7 +42,7 @@ func SetRdmaIngress(portNumber uint16, service string, targetPortNumber uint16, 
 		if service != rdmaIngress.Service || portNumber != rdmaIngress.PortNumber {
 			changed = true
 		} else {
-			klog.Infof("Handling rdmaingress completed. RdmaIngress with port %s is unchanged. Tracking Id: %s", portNumber, trackingId)
+			klog.Infof("Handling rdmaingress completed. RdmaIngress with port %d is unchanged. Tracking Id: %s", portNumber, trackingId)
 		}
 	} else {
 		changed = true
@@ -83,7 +83,7 @@ func DeleteRdmaIngress(portNumber uint16, trackingId string) {
 		Instance().RdmaIngressEventMap[resourceVersion] = newRdmaIngressEvent
 		EnqueueRdmaIngress(*newRdmaIngressEvent)
 		delete(rdmaIngressMap, portNumber)
-		klog.Infof("Handling rdmaingress completed. RdmaIngress with port %s is deleted. Tracking Id: %s", portNumber, trackingId)
+		klog.Infof("Handling rdmaingress completed. RdmaIngress with port %d is deleted. Tracking Id: %s", portNumber, trackingId)
 	}
 }
 
