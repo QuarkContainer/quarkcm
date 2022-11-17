@@ -5,8 +5,8 @@ metadata:
 spec:
   rules:
   - port: 8080
-    service: test
-    targetport: 7000
+    service: default/test
+    targetport: 9000
   - port: 8000
-    service: test1
-    targetport: 7001
+    service: default/test1
+    targetport: 9001
