@@ -1,3 +1,47 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod-quark-0
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  runtimeClassName: quark
+  nodeSelector:
+    {"kubernetes.io/hostname":"qingming1-precision-3630-tower"}
+  containers:
+  - name: testpod
+    image: quarkcm/testpod:v0.1.0
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: testpod-quark-1
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  runtimeClassName: quark
+  nodeSelector:
+    {"kubernetes.io/hostname":"qingming-precision-3630-tower"}
+  containers:
+  - name: testpod
+    image: quarkcm/testpod:v0.1.0
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9000
+      targetPort: 7000
+  selector:
+     tier: frontend
+---
 apiVersion: quarksoft.io/v1alpha1
 kind: RdmaIngress
 metadata:
