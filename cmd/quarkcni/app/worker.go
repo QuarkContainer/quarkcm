@@ -17,6 +17,8 @@ limitations under the License.
 package app
 
 import (
+	"strings"
+
 	"github.com/CentaurusInfra/quarkcm/pkg/ipam"
 	"github.com/CentaurusInfra/quarkcm/pkg/objects"
 	"github.com/CentaurusInfra/quarkcm/pkg/util/netutil"
@@ -50,9 +52,10 @@ func DoCmdAdd(netVariables *objects.NetVariables, stdinData []byte) (cniTypesVer
 	if err != nil {
 		klog.Errorf("Fail to retrieve iptables. %v", err)
 	}
-	err = ipt.AppendUnique("nat", "OUTPUT", "-p", "tcp", "-d", ipam.PodCidr, "-j", "DNAT", "--to-destination", "127.0.0.1:7981", "-m", "comment", "--comment", "quark_rdma_incluster_ingress")
+	podCidr := strings.ReplaceAll(ipam.PodCidr, "/24", "/16")
+	err = ipt.AppendUnique("nat", "OUTPUT", "-p", "tcp", "-d", podCidr, "-j", "DNAT", "--to-destination", "127.0.0.1:7981", "-m", "comment", "--comment", "quark_rdma_incluster_ingress")
 	if err != nil {
-		klog.Errorf("Fail to append iptables rule to redirect traffic to cluster pod subnet %s. %v", ipam.PodCidr, err)
+		klog.Errorf("Fail to append iptables rule to redirect traffic to cluster pod subnet %s. %v", podCidr, err)
 	}
 
 	result := cniTypesVer.Result{
