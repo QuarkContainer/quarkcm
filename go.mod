@@ -6,6 +6,7 @@ require (
 	github.com/ahmetalpbalkan/go-linq v3.0.0+incompatible
 	github.com/containernetworking/cni v0.8.1
 	github.com/containernetworking/plugins v0.9.1
+	github.com/coreos/go-iptables v0.6.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
