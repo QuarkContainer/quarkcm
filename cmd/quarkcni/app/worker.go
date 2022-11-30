@@ -21,6 +21,7 @@ import (
 	"github.com/CentaurusInfra/quarkcm/pkg/objects"
 	"github.com/CentaurusInfra/quarkcm/pkg/util/netutil"
 	"github.com/CentaurusInfra/quarkcm/pkg/util/netvariablesutil"
+	"github.com/coreos/go-iptables/iptables"
 
 	cniTypesVer "github.com/containernetworking/cni/pkg/types/current"
 	klog "k8s.io/klog/v2"
@@ -43,6 +44,15 @@ func DoCmdAdd(netVariables *objects.NetVariables, stdinData []byte) (cniTypesVer
 	err := netutil.ActivateInterface(netVariables.IfName, netVariables.NetNS, "32", allocatedIp, gateway)
 	if err != nil {
 		return cniTypesVer.Result{CNIVersion: netVariables.CniVersion}, err
+	}
+
+	ipt, err := iptables.New()
+	if err != nil {
+		klog.Errorf("Fail to retrieve iptables. %v", err)
+	}
+	err = ipt.AppendUnique("nat", "OUTPUT", "-p", "tcp", "-d", ipam.PodCidr, "-j", "DNAT", "--to-destination", "127.0.0.1:7981", "-m", "comment", "--comment", "quark_rdma_incluster_ingress")
+	if err != nil {
+		klog.Errorf("Fail to append iptables rule to redirect traffic to cluster pod subnet %s. %v", ipam.PodCidr, err)
 	}
 
 	result := cniTypesVer.Result{

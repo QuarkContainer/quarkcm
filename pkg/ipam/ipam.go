@@ -27,10 +27,10 @@ import (
 	"k8s.io/klog"
 )
 
-var podCidr string
+var PodCidr string
 
 func Allocate(vpc string, podName string, podId string) (string, string) {
-	podCidr = osutil.ReadFromFile(constants.Pod_Cidr_File_Name_In_Host)
+	PodCidr = osutil.ReadFromFile(constants.Pod_Cidr_File_Name_In_Host)
 
 	// todo Hong add a lock to avoid dirty read
 	var vpcIpsMap = map[string]map[string]string{} // vpc -> ip -> pod name
@@ -43,7 +43,7 @@ func Allocate(vpc string, podName string, podId string) (string, string) {
 		vpcIpsMap[vpc] = ipSet
 	}
 
-	ip, ipnet, _ := net.ParseCIDR(podCidr)
+	ip, ipnet, _ := net.ParseCIDR(PodCidr)
 	skip := 2
 	var gateway string
 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
