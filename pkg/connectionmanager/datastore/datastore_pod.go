@@ -92,8 +92,7 @@ func GetContainerId(podKey string, podId string) string {
 		return ""
 	}
 	json.Unmarshal([]byte(allocatedIps), &vpcIpsMap)
-	namespace := strings.Split(podKey, "/")[0]
-	if ipMap, exists := vpcIpsMap[namespace]; !exists {
+	if ipMap, exists := vpcIpsMap["1"]; !exists {
 		return ""
 	} else if podStr, exists := ipMap[podId]; !exists {
 		return ""

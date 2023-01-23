@@ -39,7 +39,7 @@ func DoCmdAdd(netVariables *objects.NetVariables, stdinData []byte) (cniTypesVer
 		return cniTypesVer.Result{CNIVersion: netVariables.CniVersion}, err
 	}
 
-	allocatedIp, gateway := ipam.Allocate(netVariables.K8sPodNamespace, netVariables.K8sPodName, netVariables.ContainerID)
+	allocatedIp, gateway := ipam.Allocate("1", netVariables.K8sPodName, netVariables.ContainerID)
 	klog.Infof("%s/%s allocated ip %s gateway %s\n", netVariables.K8sPodNamespace, netVariables.K8sPodName, allocatedIp, gateway)
 	_, podIP, _ := netutil.ParseCIDR(allocatedIp)
 
@@ -77,7 +77,7 @@ func DoCmdDel(netVariables *objects.NetVariables, stdinData []byte) (cniTypesVer
 		CNIVersion: netVariables.CniVersion,
 	}
 
-	ipam.Deallocate(netVariables.K8sPodNamespace, netVariables.K8sPodName)
+	ipam.Deallocate("1", netVariables.K8sPodName)
 
 	if err := netvariablesutil.LoadCniConfig(netVariables, stdinData); err != nil {
 		return result, err
